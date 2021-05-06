@@ -74,22 +74,25 @@ export default class Emojis extends Plugin {
 				tooltip: true
 			} );
 
+			editor.model.schema.register('span', {
+				inheritAllFrom: '$text',
+				allowIn: ['paragraph', 'h1', 'h2', 'h3'],
+				allowAttributes: ['id', 'class']
+			});
+			editor.conversion.elementToElement({model: 'span', view: 'span'});
+			editor.conversion.attributeToAttribute({model: 'class', view: 'class'});
+			editor.conversion.attributeToAttribute({model: {name: 'span', key: 'id'}, view: 'id'});
+
 			dropdownView.bind( 'isEnabled' ).to( inputCommand );
 
 			// Insert an emoji when a tile is clicked.
 			dropdownView.on( 'execute', ( evt, data ) => {
+
 				editor.model.change( writer => {
+					var insertedElement = writer.createElement('span', {'class': 'ck-emoji'});
+					writer.insertText( data.character, insertedElement );
+					editor.model.insertContent(insertedElement);
 
-					const spanElemet = writer.createElement( 'span', { text: data.character, class : 'ckeditor-emoji'} );
-
-					const insertAtSelection = this.findOptimalInsertionPosition( editor.model.document.selection, editor.model );
-					
-					editor.model.insertContent( spanElemet, insertAtSelection );
-
-					// Inserting an image might've failed due to schema regulations.
-					// if ( imageElement.parent ) {
-					// 	writer.setSelection( imageElement, 'on' );
-					// }
 				} );
 				editor.editing.view.focus();
 			} );
@@ -126,44 +129,6 @@ export default class Emojis extends Plugin {
 		}
 	}
 
-	findOptimalInsertionPosition( selection, model ) {
-		const selectedElement = selection.getSelectedElement();
-		if ( selectedElement ) {
-			const typeAroundFakeCaretPosition = getTypeAroundFakeCaretPosition( selection );
-
-			// If the WidgetTypeAround "fake caret" is displayed, use its position for the insertion
-			// to provide the most predictable UX (https://github.com/ckeditor/ckeditor5/issues/7438).
-			if ( typeAroundFakeCaretPosition ) {
-				return model.createPositionAt( selectedElement, typeAroundFakeCaretPosition );
-			}
-
-			if ( model.schema.isBlock( selectedElement ) ) {
-				return model.createPositionAfter( selectedElement );
-			}
-		}
-
-		const firstBlock = selection.getSelectedBlocks().next().value;
-
-		if ( firstBlock ) {
-			// If inserting into an empty block – return position in that block. It will get
-			// replaced with the image by insertContent(). #42.
-			if ( firstBlock.isEmpty ) {
-				return model.createPositionAt( firstBlock, 0 );
-			}
-
-			const positionAfter = model.createPositionAfter( firstBlock );
-
-			// If selection is at the end of the block - return position after the block.
-			if ( selection.focus.isTouching( positionAfter ) ) {
-				return positionAfter;
-			}
-
-			// Otherwise return position before the block.
-			return model.createPositionBefore( firstBlock );
-		}
-
-		return selection.focus;
-	}
 
 	/**
 	 * Adds a collection of special characters to the specified group. The title of a special character must be unique.
