@@ -74,25 +74,26 @@ export default class Emojis extends Plugin {
 				tooltip: true
 			} );
 
-			editor.model.schema.register('span', {
+			editor.model.schema.register( 'emoji', {
 				inheritAllFrom: '$text',
-				allowIn: ['paragraph', 'h1', 'h2', 'h3'],
-				allowAttributes: ['id', 'class']
-			});
-			editor.conversion.elementToElement({model: 'span', view: 'span'});
-			editor.conversion.attributeToAttribute({model: 'class', view: 'class'});
-			editor.conversion.attributeToAttribute({model: {name: 'span', key: 'id'}, view: 'id'});
+				allowContentOf: '$block'
+			} );
+			editor.conversion.elementToElement( {
+				model: 'emoji',
+				view: {
+					name: 'span',
+					classes: 'ck-emoji'
+				}
+			} );
 
 			dropdownView.bind( 'isEnabled' ).to( inputCommand );
 
 			// Insert an emoji when a tile is clicked.
 			dropdownView.on( 'execute', ( evt, data ) => {
-
 				editor.model.change( writer => {
-					var insertedElement = writer.createElement('span', {'class': 'ck-emoji'});
+					var insertedElement = writer.createElement( 'emoji' );
 					writer.insertText( data.character, insertedElement );
 					editor.model.insertContent(insertedElement);
-
 				} );
 				editor.editing.view.focus();
 			} );
