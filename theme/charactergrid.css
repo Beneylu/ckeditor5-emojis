@@ -4,8 +4,33 @@
  */
 
 .ck.ck-character-grid {
+	overflow-y: auto;
+	overflow-x: hidden;
+	max-height: 300px;
+
 	& .ck-character-grid__tiles {
 		display: grid;
 		grid-template-columns: repeat( 10, 1fr );
+		margin: 0.6em;
+	}
+
+	& .ck-character-grid__tile {
+		width: 1.8em;
+		height: 1.8em;
+		min-width: 1.8em;
+		min-height: 1.8em;
+		font-size: 2em;
+		line-height: 1.8em;
+		padding: 0;
+		transition: .2s ease box-shadow;
+		border: 0;
+		justify-content: center;
+
+		&:focus:not( .ck-disabled ),
+		&:hover:not( .ck-disabled ) {
+			/* Disable the default .ck-button's border ring. */
+			border: 0;
+			box-shadow: inset 0 0 0 1px var(--ck-color-base-background), 0 0 0 2px var(--ck-color-focus-border);
+		}
 	}
 }
