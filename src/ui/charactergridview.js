@@ -90,7 +90,7 @@ export default class CharacterGridView extends View {
 		tile.set( {
 			label: character,
 			withText: true,
-			class: 'ck-character-grid__tile'
+			class: 'ck-character-grid__tile ck-emoji'
 		} );
 
 		// Labels are vital for the users to understand what character they're looking at.
