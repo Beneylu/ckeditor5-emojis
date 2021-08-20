@@ -8,6 +8,7 @@ import CharacterInfoView from './ui/characterinfoview';
 
 import emojiIcon from '../theme/icons/face.svg';
 import '../theme/specialcharacters.css';
+import '../theme/emojis.css';
 import activities from '../data/activities.json';
 import food from '../data/food.json';
 import nature from '../data/nature.json';
@@ -61,6 +62,41 @@ export default class Emojis extends Plugin {
 		const editor = this.editor;
 		const t = editor.t;
 
+		this.editor.model.schema.register( 'animatedEmoji', {
+			allowWhere: '$text',
+			isInline: true,
+			isObject: false,
+			allowAttributesOf: '$text',
+			allowAttributes: [ 'name' ]
+		} );
+
+		this.editor.conversion.for( 'upcast' ).elementToElement( {
+			view: {
+				name: 'span',
+				attributes: {
+					'data-emoji': /.*/,
+				}
+			},
+			model: ( viewElement, { writer } ) => {
+				const name = viewElement.getAttribute( 'data-emoji' );
+
+				return writer.createElement( 'animatedEmoji', { name } );
+			}
+		} );
+		this.editor.conversion.for( 'downcast' ).elementToElement( {
+			model: 'animatedEmoji',
+			view: ( modelValue, { writer } ) => {
+				console.log('downcast', modelValue);
+				if ( !( modelValue && modelValue.getAttribute( 'name' ) ) ) {
+					return;
+				}
+
+				return writer.createAttributeElement( 'span', {
+					'data-emoji': modelValue.getAttribute( 'name' )
+				} );
+			}
+		} );
+
 		const inputCommand = editor.commands.get( 'input' );
 
 		// Add the `emojis` dropdown button to feature components.
@@ -85,6 +121,48 @@ export default class Emojis extends Plugin {
 			dropdownView.on( 'change:isOpen', () => {
 				if ( !dropdownPanelContent ) {
 					dropdownPanelContent = this._createDropdownPanelContent( locale, dropdownView );
+
+					dropdownView.panelView.children.add( dropdownPanelContent.navigationView );
+					dropdownView.panelView.children.add( dropdownPanelContent.gridView );
+					dropdownView.panelView.children.add( dropdownPanelContent.infoView );
+				}
+
+				dropdownPanelContent.infoView.set( {
+					character: null,
+					name: null
+				} );
+			} );
+
+			return dropdownView;
+		} );
+
+		// Add the `animatedEmojis` dropdown button to feature components.
+		editor.ui.componentFactory.add( 'animatedEmojis', locale => {
+			const dropdownView = createDropdown( locale );
+			let dropdownPanelContent;
+
+			dropdownView.buttonView.set( {
+				label: t( 'Emojis animés' ),
+				icon: emojiIcon,
+				class: 'bns-animated-emoji-btn',
+				tooltip: true
+			} );
+
+			dropdownView.bind( 'isEnabled' ).to( inputCommand );
+
+			// Insert an emoji when a tile is clicked.
+			dropdownView.on( 'execute', ( evt, data ) => {
+				console.log( 'Animated emoji: ', data.character);
+				editor.model.change( writer => {
+					const animatedEmoji = writer.createElement( 'animatedEmoji', { name: data.name.replaceAll( ':', '' ) } );
+					editor.model.insertContent( animatedEmoji );
+					writer.setSelection( animatedEmoji, 'on' );
+				} );
+			} );
+
+			dropdownView.on( 'change:isOpen', () => {
+				if ( !dropdownPanelContent ) {
+					dropdownPanelContent = this._createDropdownPanelContent( locale, dropdownView, { animated: true } );
 
 					dropdownView.panelView.children.add( dropdownPanelContent.navigationView );
 					dropdownView.panelView.children.add( dropdownPanelContent.gridView );
@@ -200,7 +278,7 @@ export default class Emojis extends Plugin {
 	 * @param {String} currentGroupName
 	 * @param {module:special-characters/ui/charactergridview~CharacterGridView} gridView
 	 */
-	_updateGrid( currentGroupName, gridView ) {
+	_updateGrid( currentGroupName, gridView, options = {} ) {
 		// Updating the grid starts with removing all tiles belonging to the old group.
 		gridView.tiles.clear();
 
@@ -209,7 +287,7 @@ export default class Emojis extends Plugin {
 		for ( const title of characterTitles ) {
 			const character = this.getCharacter( title );
 
-			gridView.tiles.add( gridView.createTile( character, title ) );
+			gridView.tiles.add( gridView.createTile( character, title, options ) );
 		}
 	}
 
@@ -221,7 +299,7 @@ export default class Emojis extends Plugin {
 	 * @param {module:ui/dropdown/dropdownview~DropdownView} dropdownView
 	 * @returns {Object} Returns an object with `navigationView`, `gridView` and `infoView` properties, containing UI parts.
 	 */
-	_createDropdownPanelContent( locale, dropdownView ) {
+	_createDropdownPanelContent( locale, dropdownView, options = {} ) {
 		const emojiGroups = [ ...this.getGroups() ];
 
 		// Add a special group that shows all available emojis
@@ -239,11 +317,11 @@ export default class Emojis extends Plugin {
 
 		// Update the grid of special characters when a user changed the character group.
 		navigationView.on( 'execute', () => {
-			this._updateGrid( navigationView.currentGroupName, gridView );
+			this._updateGrid( navigationView.currentGroupName, gridView, options );
 		} );
 
 		// Set the initial content of the special characters grid.
-		this._updateGrid( navigationView.currentGroupName, gridView );
+		this._updateGrid( navigationView.currentGroupName, gridView, options );
 
 		return { navigationView, gridView, infoView };
 	}
