@@ -86,7 +86,6 @@ export default class Emojis extends Plugin {
 		this.editor.conversion.for( 'downcast' ).elementToElement( {
 			model: 'animatedEmoji',
 			view: ( modelValue, { writer } ) => {
-				console.log('downcast', modelValue);
 				if ( !( modelValue && modelValue.getAttribute( 'name' ) ) ) {
 					return;
 				}
@@ -152,7 +151,6 @@ export default class Emojis extends Plugin {
 
 			// Insert an emoji when a tile is clicked.
 			dropdownView.on( 'execute', ( evt, data ) => {
-				console.log( 'Animated emoji: ', data.character);
 				editor.model.change( writer => {
 					const animatedEmoji = writer.createElement( 'animatedEmoji', { name: data.name.replaceAll( ':', '' ) } );
 					editor.model.insertContent( animatedEmoji );
