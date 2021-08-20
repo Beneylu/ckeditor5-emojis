@@ -84,7 +84,7 @@ export default class CharacterGridView extends View {
 	 * @param {String} name The name of the character (e.g. "greek small letter epsilon").
 	 * @returns {module:ui/button/buttonview~ButtonView}
 	 */
-	createTile( character, name ) {
+	createTile( character, name, options = {} ) {
 		const tile = new ButtonView( this.locale );
 
 		tile.set( {
@@ -92,6 +92,14 @@ export default class CharacterGridView extends View {
 			withText: true,
 			class: 'ck-character-grid__tile ck-emoji'
 		} );
+
+		if ( options.animated ) {
+			tile.extendTemplate( {
+				attributes: {
+					'data-emoji': name.replaceAll( ':', '' )
+				}
+			} );
+		}
 
 		// Labels are vital for the users to understand what character they're looking at.
 		// For now we're using native title attribute for that, see #5817.
